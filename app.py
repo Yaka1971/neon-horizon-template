@@ -338,8 +338,18 @@ PUBLIC_TEMPLATE = r'''<!DOCTYPE html>
 <div class="video-modal" id="videoModal"><div class="video-modal-content"><span class="close-video">&times;</span>
 <iframe id="videoFrame" src="" title="{{ c.site_name }} Video Player" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div></div>
 <section class="contact-section" id="contact"><p class="section-label">{{ c.contact_label }}</p><h2>{{ c.contact_heading }}</h2>
-<p class="contact-text">{{ c.contact_text }}</p><a href="mailto:{{ c.booking_email }}" class="contact-btn">{{ c.contact_button }}</a>
-<div class="social-links"><a href="{{ c.youtube_url }}">YouTube</a><a href="{{ c.spotify_url }}">Spotify</a><a href="{{ c.apple_music_url }}">Apple Music</a><a href="{{ c.instagram_url }}">Instagram</a></div>
+<p class="contact-text">{{ c.contact_text }}</p>
+{% if c.booking_email and '@example.com' not in c.booking_email|lower %}
+<a href="mailto:{{ c.booking_email }}" class="contact-btn">{{ c.contact_button }}</a>
+{% else %}
+<a href="/demo-booking" class="contact-btn">{{ c.contact_button }}</a>
+{% endif %}
+<div class="social-links">
+<a href="{{ c.youtube_url if c.youtube_url and c.youtube_url != '#' else '/demo-platform/youtube' }}">YouTube</a>
+<a href="{{ c.spotify_url if c.spotify_url and c.spotify_url != '#' else '/demo-platform/spotify' }}">Spotify</a>
+<a href="{{ c.apple_music_url if c.apple_music_url and c.apple_music_url != '#' else '/demo-platform/apple-music' }}">Apple Music</a>
+<a href="{{ c.instagram_url if c.instagram_url and c.instagram_url != '#' else '/demo-platform/instagram' }}">Instagram</a>
+</div>
 </section><footer><p>{{ c.footer_text }} <span class="md-credit">Powered by MAYAKA'AL DIGITAL.</span></p></footer>
 <script>window.NEON_DATA={{ payload|tojson }};</script><script src="/script.js"></script>
 {% if preview %}<div class="preview-bar">MD SITE MANAGER PREVIEW — DRAFT CONTENT — NOT LIVE</div>{% endif %}
@@ -622,6 +632,43 @@ def manager_backups():
             dt = datetime.fromtimestamp(os.path.getmtime(path), tz)
             rows.append({"name":name,"size":round(os.path.getsize(path)/1024,1),"time":dt.strftime("%b %d, %Y • %I:%M %p")})
     return render_template_string(BACKUP_TEMPLATE, backups=rows, message=message)
+
+
+DEMO_DESTINATION_TEMPLATE = r"""<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEON HORIZON | Portfolio Demo</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#03040a;color:#fff;font-family:Arial,sans-serif;padding:24px}
+.card{width:min(680px,100%);box-sizing:border-box;padding:42px;border:1px solid #00d9ff55;background:#07111f;border-radius:20px;text-align:center;box-shadow:0 25px 80px #0009}
+.k{color:#00d9ff;font-size:11px;font-weight:900;letter-spacing:3px}.card h1{font-size:clamp(32px,7vw,64px);margin:12px 0}
+.card p{color:#a8b5c4;line-height:1.7}.card a{display:inline-block;margin-top:18px;padding:13px 20px;border-radius:8px;background:#ffc02d;color:#07111f;text-decoration:none;font-weight:900}
+</style></head><body><main class="card"><div class="k">MAYAKA'AL DIGITAL PORTFOLIO DEMO</div>
+<h1>{{ title }}</h1><p>{{ message }}</p><a href="/">RETURN TO NEON HORIZON</a></main></body></html>"""
+
+@app.route("/demo-booking")
+def demo_booking():
+    return render_template_string(
+        DEMO_DESTINATION_TEMPLATE,
+        title="BOOKING DEMONSTRATION",
+        message="This is a portfolio demonstration. On a live client website, this button would connect to the artist's real booking or contact destination."
+    )
+
+@app.route("/demo-platform/<platform>")
+def demo_platform(platform):
+    names = {
+        "youtube": "YouTube",
+        "spotify": "Spotify",
+        "apple-music": "Apple Music",
+        "instagram": "Instagram",
+    }
+    name = names.get(platform)
+    if not name:
+        abort(404)
+    return render_template_string(
+        DEMO_DESTINATION_TEMPLATE,
+        title=f"{name.upper()} DEMONSTRATION",
+        message=f"This demo does not impersonate a real artist account. A live client website would connect this link to the artist's real {name} profile."
+    )
 
 @app.errorhandler(404)
 def not_found(e):
